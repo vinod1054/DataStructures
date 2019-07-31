@@ -2,82 +2,113 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Stack;
 import java.util.StringTokenizer;
 
-public class Current {
+ class Current {
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		FastReader fs = new FastReader();
 		int n = fs.nextInt();
-		long[] a = new long[n];
-		for(int i=0;i<n;i++)
-			a[n-1-i]=fs.nextLong();
 		int q = fs.nextInt();
-		BIT bit = new Current().new BIT(a);
-		while(q-->0) {
-			int op = fs.nextInt();
-			if(op==2) {
-				long sum = fs.nextLong();
-				if(bit.isSumPresent(sum, 1, a.length)!=-1)
-					System.out.println("YES");
-				else
-					System.out.println("NO");
-			}
-			else {
-				int ind = fs.nextInt()-1;
-				long val = fs.nextLong();
-				val = val-a[n-1-ind];
-				a[n-1-ind] += val;
-				bit.addValue(n-ind, val);
+		
+		long[] a = new long[n];
+		for(int i=0;i<n;i++) 
+			a[i]=fs.nextInt();
+		
+		int[] next = new int[n];
+		Queue<Integer> qu = new PriorityQueue<>();
+		qu.add(0);
+		for(int i=1;i<n;i++) {
+			while(!qu.isEmpty() && a[qu.peek()]<a[i])
+				next[qu.poll()] = i;
+			qu.add(i);
+			if(qu.size()>100)
+				next[qu.peek()] = qu.poll();
+		}
+		while(!qu.isEmpty())
+			next[qu.peek()] = qu.poll();
+
+		int F[][] = new int[n][2];
+		
+		int bucketLength = (int) Math.ceil(n);
+		for(int bi=0;bi<bucketLength;bi++) {
+			for(int i=Math.min(((bi+1)*bucketLength)-1,n-1);i>(bi*bucketLength)-1;i--) {
+				int nxt = next[i];
+				if(i==nxt || nxt/bucketLength==bi+1) {
+					F[i][0]=i;
+					F[i][1]=0;
+				}
+				else {
+					F[i][0]= F[nxt][0];
+					F[i][1] = F[nxt][1]+1;
+				}
 			}
 		}
+		
+		SquareRootDecomposition sq = new Current().new SquareRootDecomposition(a);
+		while(q-->0) {
+			int op = fs.nextInt();
+			if(op==1) {
+				int l =fs.nextInt()-1;
+				int k = fs.nextInt();
+				while(k-->0) {
+					int tmp = sq.getMax(l);
+					if(tmp==l)
+						break;
+					l = tmp;
+				}
+				System.out.println(l+1);
+			}
+			else {
+				int l =fs.nextInt();
+				int r = fs.nextInt();
+				int val = fs.nextInt();
+				sq.add(l-1, r-1, val);
+			}
+		}
+		
 	}
 	
 
-	class BIT{
-		long[] arr;
+	class SquareRootDecomposition{
+		
 		int N;
-		BIT(long[] arr){
-			N= arr.length+1;
-			this.arr = new long[N];
-			Arrays.fill(this.arr, 0);
-			for(int i=0;i<arr.length;i++)
-				addValue(i+1, arr[i]);
+		int cellLength;
+		long[] a;
+		long[] arr;
+		
+		public SquareRootDecomposition(long[] arr) {
+			this.arr = arr;
+			N = arr.length;
+			cellLength = (int) Math.ceil(Math.sqrt(N));
+			a = new long[(cellLength)];
+			Arrays.fill(a, 0);
 		}
 		
-		public void addValue(int ind, long value) {
-			while(ind<N) {
-				arr[ind] += value;
-				ind += ind&-ind;
+		
+		public int getMax(int i) {
+			for(int j=i+1;j<=i+100 && j<arr.length;j++) {
+				if(arr[j]+a[j/cellLength]>arr[i]+a[i/cellLength])
+					return j;
+			}
+			return i;
+		}
+		
+		// zero index based
+		public void add(int l, int r, int val) {
+			for(int i=l;i<=r;) {
+				if(i%cellLength==0 && i+cellLength-1<=r) {
+					a[i/cellLength]+=val;
+					i+=cellLength;
+				}
+				else {
+					arr[i++]+=val;
+				}
 			}
 		}
-		
-		public long getSum(int ind) {
-			long sum = 0;
-			while(ind>0) {
-				sum +=  arr[ind];
-				ind -= ind&-ind;
-			}
-			return sum;
-		}
-		
-		// is prefix sum present
-		public int isSumPresent(long sum, int l, int r) {
-			if(l==r)
-				if(getSum(l)==sum)
-					return l;
-				else
-					return -1;
-			int mid = (l+r)/2;
-			long s = getSum(mid);
-			if(s==sum)
-				return mid;
-			else if(s>sum)
-				return isSumPresent(sum, l, mid);
-			else
-				return isSumPresent(sum, mid+1, r);
-		}
-		
 	}
 	
 	static class FastReader 
