@@ -1,86 +1,158 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
-public class Current {
-	
-	public static void main(String[] args) {
-		FastReader fs = new FastReader();
-		int n = fs.nextInt();
-		long[] a = new long[n];
-		for(int i=0;i<n;i++)
-			a[n-1-i]=fs.nextLong();
-		int q = fs.nextInt();
-		BIT bit = new Current().new BIT(a);
-		while(q-->0) {
-			int op = fs.nextInt();
-			if(op==2) {
-				long sum = fs.nextLong();
-				if(bit.isSumPresent(sum, 1, a.length)!=-1)
-					System.out.println("YES");
-				else
-					System.out.println("NO");
-			}
-			else {
-				int ind = fs.nextInt()-1;
-				long val = fs.nextLong();
-				val = val-a[n-1-ind];
-				a[n-1-ind] += val;
-				bit.addValue(n-ind, val);
-			}
-		}
-	}
-	
-
-	class BIT{
-		long[] arr;
-		int N;
-		BIT(long[] arr){
-			N= arr.length+1;
-			this.arr = new long[N];
-			Arrays.fill(this.arr, 0);
-			for(int i=0;i<arr.length;i++)
-				addValue(i+1, arr[i]);
-		}
-		
-		public void addValue(int ind, long value) {
-			while(ind<N) {
-				arr[ind] += value;
-				ind += ind&-ind;
-			}
-		}
-		
-		public long getSum(int ind) {
-			long sum = 0;
-			while(ind>0) {
-				sum +=  arr[ind];
-				ind -= ind&-ind;
-			}
-			return sum;
-		}
-		
-		// is prefix sum present
-		public int isSumPresent(long sum, int l, int r) {
-			if(l==r)
-				if(getSum(l)==sum)
-					return l;
-				else
-					return -1;
-			int mid = (l+r)/2;
-			long s = getSum(mid);
-			if(s==sum)
-				return mid;
-			else if(s>sum)
-				return isSumPresent(sum, l, mid);
-			else
-				return isSumPresent(sum, mid+1, r);
-		}
-		
-	}
-	
-	static class FastReader 
+ class Solution {
+    
+    public static void main(String[] args) throws IOException {
+        
+        PrintWriter      writer = new PrintWriter( System.out );
+        FastReader fs = new FastReader();
+        int n = fs.nextInt();
+        int q = fs.nextInt();
+        int[][] arr = new int[n-1][3];
+        for(int i=0;i<n-1;i++) {
+            arr[i][0] = fs.nextInt();
+            arr[i][1] = fs.nextInt();
+            arr[i][2] = fs.nextInt();
+        }
+        Arrays.sort(arr, new java.util.Comparator<int[]>() {
+            public int compare(int[] a, int[] b) {
+                return Integer.compare(a[2], b[2]);
+            }
+        });
+        
+        long count[] = new long[n-1];
+        Solution cr = new Solution();
+        DisjointSet ds = cr.new DisjointSet(n);
+        
+        for(int i=0;i<n-1;i++) {
+            long cc = ds.union(arr[i][0], arr[i][1]);
+            count[i] = (i==0?0:count[i-1])+cc;
+        }
+        
+        while(q-->0) {
+            int l = fs.nextInt();
+            int r = fs.nextInt();
+            
+            int l1 = Solution.findFirstGreaterElement(l, arr, 0, arr.length-1);
+            int r1 = Solution.findFirstSmallerElement(r, arr, 0, arr.length-1);
+            if(l1==-1 || r1==-1)
+                writer.println(0);
+            else
+                writer.println(count[r1]-(l1==0?0:count[l1-1]));
+        }
+        
+        writer.flush();
+        writer.close();
+    }
+    
+    
+    public static int findFirstSmallerElement(int val, int[][] arr, int l, int r) {
+        
+        if(l==r) {
+            int ans = arr[l][2]<=val?l:-1;
+            if(ans==-1) {
+                if(l>0 && arr[l-1][2]<=val)
+                    ans = l-1;
+            }
+            return ans;
+        }
+        
+        int mid = (l+r)/2;
+        
+        if(arr[mid][2]==val) {
+            while(mid<arr.length && arr[mid][2]==val) {
+                mid++;
+            }
+            return mid-1;
+        }
+        
+        if(arr[mid][2]>val)
+            return findFirstSmallerElement(val,arr,l,mid==l?mid:mid-1);
+        else
+            return findFirstSmallerElement(val,arr,mid+1,r);
+    }
+    
+    
+    public static int findFirstGreaterElement(int val, int[][] arr, int l, int r) {
+        
+        if(l==r) 
+            return arr[l][2]>=val?l:-1;
+        
+        int mid = (l+r)/2;
+        
+        if(arr[mid][2]==val) {
+            while(mid>=0 && arr[mid][2]==val) {
+                mid--;
+            }
+            return mid+1;
+        }
+        
+        if(arr[mid][2]>val)
+            return findFirstGreaterElement(val,arr,l,mid);
+        else
+            return findFirstGreaterElement(val,arr,mid+1,r);
+    }
+    
+    
+    class DisjointSet{
+        
+        int[] p;
+        int[] size;
+        
+        
+        public DisjointSet(int n) {
+            p = new int[n+1];
+            size = new int[n+1];
+            for(int i=0;i<=n;i++) {
+                p[i] = i;
+                size[i] = 1;
+                }
+        }
+        
+        public String minmax() {
+            int min = Integer.MAX_VALUE;
+            int max = Integer.MIN_VALUE;
+            for(int i=1;i<size.length;i++) {
+                if(size[findSet(i)]!=1)
+                    min = Math.min(min, size[findSet(i)]);
+                max = Math.max(max, size[findSet(i)]);
+            }
+            return min+" "+max;
+        }
+        
+        public long union(int i, int j) {
+            int a = findSet(i);
+            int b = findSet(j);
+            long cc = 0;
+            if(a!=b) {
+                cc = ((long)size[a])*((long)size[b]);
+                if(size[a]<size[b]) {
+                    int tmp = a;
+                    a = b;
+                    b = tmp;
+                }
+                p[b] = a;
+                size[a]+=size[b];
+            }
+            return cc;
+        }
+        
+        public int findSet(int i) {
+            if(i!=p[i])
+                p[i] = findSet(p[i]);
+            return p[i];
+        }
+        
+        
+    }
+    
+    
+    static class FastReader 
     { 
         BufferedReader br; 
         StringTokenizer st; 
@@ -136,6 +208,6 @@ public class Current {
             return str; 
         } 
     } 
-	
-	
+    
+    
 }
