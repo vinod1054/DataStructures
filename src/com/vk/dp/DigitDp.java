@@ -1,3 +1,5 @@
+package com.vk.dp;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -7,7 +9,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.StringTokenizer;
 
- class Solution {
+ class DigitDp {
 	 
 	 public static long mod = 1000000000+7;
      public static int MAX_N = 100000;
@@ -175,3 +177,4 @@ import java.util.StringTokenizer;
     
     
 }
+
